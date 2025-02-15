@@ -1,5 +1,5 @@
-%% Import data from https://trac.syr.edu/immigration/reports/judgereports/
-baseURL = "https://trac.syr.edu/immigration/reports/judgereports/";
+%% Import data from https://tracreports.org/immigration/reports/judgereports/
+baseURL = "https://tracreports.org/immigration/reports/judgereports/";
 tab = readtable(baseURL,"FileType","html",...
     TableSelector="//TABLE[contains(.,'Immigration Court')]");
 % Fill in court data for all rows
@@ -36,63 +36,66 @@ caseThreshold = 7500; % top ten
 % caseThreshold = 15000; % top three
 bigCourt = courts(numCases>caseThreshold);
 
+%%
+colorDenied = [44,105,113]/255;
+colorOther = [231,240,241]/255;
+colorGranted = [74,167,160]/255;%[20,57,61]/255;
+
 %% Loop over big courts
 for j = 1:numel(bigCourt)
     ind = find(court==bigCourt(j));
     label = judge(ind);
-    %%
-    colorDenied = [44,105,113]/255;
-    colorOther = [231,240,241]/255;
-    colorGranted = [74,167,160]/255;%[20,57,61]/255;
     %% Take a pointer from https://www.mathworks.com/matlabcentral/answers/538427
-    figure('Position',[0,0,560,210]);
-    x = total(ind);
-    x_points = movmean(cumsum([0;x]),2,'Endpoints','discard');
-    b = gobjects(1,numel(x_points));
-    ax = axes();
-    hold(ax);
-    for k = 1:numel(ind)
-        patch(x_points(k)+[-1,-1,1,1]*x(k)/2,...
-            denied(ind(k))*[0,1,1,0],...
-            colorDenied);
-        patch(x_points(k)+[-1,-1,1,1]*x(k)/2,...
-            denied(ind(k))+other(ind(k))*[0,1,1,0],...
-            colorOther);
-        patch(x_points(k)+[-1,-1,1,1]*x(k)/2,...
-            denied(ind(k))+other(ind(k))+asylum(ind(k))*[0,1,1,0],...
-            colorGranted);        
+    try
+        figure('Position',[0,0,560,210]);
+        x = total(ind);
+        x_points = movmean(cumsum([0;x]),2,'Endpoints','discard');
+        b = gobjects(1,numel(x_points));
+        ax = axes();
+        hold(ax);
+        for k = 1:numel(ind)
+            patch(x_points(k)+[-1,-1,1,1]*x(k)/2,...
+                denied(ind(k))*[0,1,1,0],...
+                colorDenied);
+            patch(x_points(k)+[-1,-1,1,1]*x(k)/2,...
+                denied(ind(k))+other(ind(k))*[0,1,1,0],...
+                colorOther);
+            patch(x_points(k)+[-1,-1,1,1]*x(k)/2,...
+                denied(ind(k))+other(ind(k))+asylum(ind(k))*[0,1,1,0],...
+                colorGranted);        
+        end
+        % Implicitly deprecated but retained
+        foo = x_points/max(x_points);
+        bar = diff([0;foo(:)]);
+        localThreshold = quantile(bar,(numel(bar)-10)/numel(bar));
+        moreCases = find(bar>localThreshold);
+        lessCases = find(bar<=localThreshold);
+        label(lessCases) = "";
+        %
+        assert(sum(x)==x_points(end)+x(end)/2,"bad arithmetic");
+        axis([0,sum(x),0,100]);
+        xlabel("bar width indicates relative asylum caseload of each judge");%,"Interpreter","latex");
+        xticks([]);
+        ylabel(["percentage of asylum decisions","by each judge"]);%,"Interpreter","latex");
+        ax.FontSize = 12;
+        %
+        fooDenied = plot(nan,nan,'color',colorDenied,'LineWidth',6);
+        fooOther = plot(nan,nan,'color',colorOther,'LineWidth',6);
+        fooAsylum = plot(nan,nan,'color',colorGranted,'LineWidth',6);
+        legend([fooDenied,fooOther,fooAsylum],...
+            {'asylum denied','other relief','asylum granted'},...
+            'Location','southwest');%,'Interpreter','latex');
+        title(join([string(bigCourt(j))," immigration court FY 2018-2024 (",num2str(int64(sum(x)))," cases)"],""));%,'Interpreter','latex');
+        % Get Lato at https://fonts.google.com/specimen/Lato and install...
+        if ismember("Lato",string(listfonts))
+            fontname("Lato");
+        end
+        %
+        box on;
+        %
+        fileName = join(["Court",strrep(string(bigCourt(j))," ","_"),".png"],"");
+        print(fileName,'-r600','-dpng');
     end
-    % Implicitly deprecated but retained
-    foo = x_points/max(x_points);
-    bar = diff([0;foo(:)]);
-    localThreshold = quantile(bar,(numel(bar)-10)/numel(bar));
-    moreCases = find(bar>localThreshold);
-    lessCases = find(bar<=localThreshold);
-    label(lessCases) = "";
-    %
-    assert(sum(x)==x_points(end)+x(end)/2,"bad arithmetic");
-    axis([0,sum(x),0,100]);
-    xlabel("bar width indicates relative asylum caseload of each judge");%,"Interpreter","latex");
-    xticks([]);
-    ylabel(["percentage of asylum decisions","by each judge"]);%,"Interpreter","latex");
-    ax.FontSize = 12;
-    %
-    fooDenied = plot(nan,nan,'color',colorDenied,'LineWidth',6);
-    fooOther = plot(nan,nan,'color',colorOther,'LineWidth',6);
-    fooAsylum = plot(nan,nan,'color',colorGranted,'LineWidth',6);
-    legend([fooDenied,fooOther,fooAsylum],...
-        {'asylum denied','other relief','asylum granted'},...
-        'Location','southwest');%,'Interpreter','latex');
-    title(join([string(bigCourt(j))," immigration court FY 2018-2023 (",num2str(int64(sum(x)))," cases)"],""));%,'Interpreter','latex');
-    % Get Lato at https://fonts.google.com/specimen/Lato and install...
-    if ismember("Lato",string(listfonts))
-        fontname("Lato");
-    end
-    %
-    box on;
-    % 
-    % fileName = join(["Court",strrep(string(bigCourt(j))," ","_"),".png"],"");
-    % print(fileName,'-r600','-dpng');
 end
 
 %%
@@ -115,7 +118,7 @@ allCountriesBeforeCourt = cell(numel(bigCourt),1);
 countryDistribution = cell(numel(bigCourt),1);
 countryDistance = cell(numel(bigCourt),1);
 decisionDistance = cell(numel(bigCourt),1);
-for j = 1:numel(bigCourt)
+for j = 9:numel(bigCourt)
     ind = find(court==bigCourt(j));
     bench = judge(ind);
     toBench = append(baseURL,link(ind));
@@ -248,18 +251,65 @@ for j = 1:numel(bigCourt)
         foo2 = countryDistribution{j}(k2,ind2);
         bar1 = [foo1,1-sum(foo1)];
         bar2 = [foo2,1-sum(foo2)];
-        figure;
-        subplot(2,2,1);
-            pie(bar1,[allCountriesBeforeCourt{j}(ind1);"Other"]);
-            title(join([string(bigCourt(j)),"-",judge(m1)]));
-        subplot(2,2,2);
-            pie(bar2,[allCountriesBeforeCourt{j}(ind2);"Other"]);
-            title(join([string(bigCourt(j)),"-",judge(m2)]));
-        subplot(2,2,3);
-            pie(decisionDistribution(k1,:),["granted","other","denied"]);
-            title(join([string(bigCourt(j)),"-",judge(m1)]));
-        subplot(2,2,4);
-            pie(decisionDistribution(k2,:),["granted","other","denied"]);
-            title(join([string(bigCourt(j)),"-",judge(m2)]));
+        try
+            figure('Position',[0,0,700,175]);
+            subplot(1,5,1:3);
+                labels1 = [allCountriesBeforeCourt{j}(ind1);"Other"];
+                labels2 = [allCountriesBeforeCourt{j}(ind2);"Other"];
+                labels12 = unique([labels1;labels2]);
+                data1 = zeros(length(labels12),1);
+                data2 = zeros(length(labels12),1);
+                for i = 1:length(labels12)
+                    if any(strcmp(labels12{i},labels1))
+                        data1(i) = bar1(strcmp(labels1,labels12{i}));
+                    end
+                    if any(strcmp(labels12{i},labels2))
+                        data2(i) = bar2(strcmp(labels2,labels12{i}));
+                    end
+                end            
+                bh = barh([100*data1,100*data2]);
+                bh(1).FaceColor = .75*[1,1,1];
+                bh(2).FaceColor = .5*[1,1,1];
+                set(gca,'yticklabel',labels12);
+                title(join([string(bigCourt(j)),"court caseload percentages"]));
+                legend(judge(m1),judge(m2),'Location','best');
+            subplot(1,5,4);
+                tmp = [0,cumsum(decisionDistribution(k1,:))];
+                hold on;
+                fooDenied = plot(-1,-1,'color',colorDenied,'LineWidth',6);
+                fooOther = plot(-1,-1,'color',colorOther,'LineWidth',6);
+                fooAsylum = plot(-1,-1,'color',colorGranted,'LineWidth',6);
+                legend([fooDenied,fooOther,fooAsylum],...
+                    {'denied','other','granted'},...
+                    'Location','best','AutoUpdate','off');%,'Interpreter','latex');
+                p = patch([0,1,1,0],100*tmp([1,1,2,2]),colorGranted);
+                p = patch([0,1,1,0],100*tmp([2,2,3,3]),colorOther);
+                p = patch([0,1,1,0],100*tmp([3,3,4,4]),colorDenied);
+                set(gca,'Ytick',[],'XTick',[]);
+                axis([0,1,0,100]);
+                ylabel("proportion of asylum decisions");
+                title(strtok(judge(m1),','));
+            subplot(1,5,5);
+                tmp = [0,cumsum(decisionDistribution(k2,:))];
+                hold on;
+                fooDenied = plot(-1,-1,'color',colorDenied,'LineWidth',6);
+                fooOther = plot(-1,-1,'color',colorOther,'LineWidth',6);
+                fooAsylum = plot(-1,-1,'color',colorGranted,'LineWidth',6);
+                legend([fooDenied,fooOther,fooAsylum],...
+                    {'denied','other','granted'},...
+                    'Location','best','AutoUpdate','off');%,'Interpreter','latex');
+                p = patch([0,1,1,0],100*tmp([1,1,2,2]),colorGranted);
+                p = patch([0,1,1,0],100*tmp([2,2,3,3]),colorOther);
+                p = patch([0,1,1,0],100*tmp([3,3,4,4]),colorDenied);
+                set(gca,'Ytick',[0,100],'XTick',[]);
+                axis([0,1,0,100]);
+                % ylabel("proportion of asylum decisions");
+                title(strtok(judge(m2),','));
+            %
+            fileName = join(["Court",strrep(string(bigCourt(j))," ","_"),...
+                strtok(judge(m1),','),strtok(judge(m2),','),".png"],"");
+            print(fileName,'-r600','-dpng');
+        catch
+        end
     end
 end
