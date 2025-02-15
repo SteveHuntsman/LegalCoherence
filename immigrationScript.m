@@ -273,6 +273,8 @@ for j = 1:numel(bigCourt)
                 set(gca,'yticklabel',labels12);
                 title(join([string(bigCourt(j)),"court caseload percentages"]));
                 legend(judge(m1),judge(m2),'Location','best');
+                foo = xlim;
+                xlim([0,foo(2)]);   
             subplot(1,5,4);
                 tmp = [0,cumsum(decisionDistribution(k1,:))];
                 hold on;
