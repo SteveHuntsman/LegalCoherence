@@ -118,7 +118,7 @@ allCountriesBeforeCourt = cell(numel(bigCourt),1);
 countryDistribution = cell(numel(bigCourt),1);
 countryDistance = cell(numel(bigCourt),1);
 decisionDistance = cell(numel(bigCourt),1);
-for j = 9:numel(bigCourt)
+for j = 1:numel(bigCourt)
     ind = find(court==bigCourt(j));
     bench = judge(ind);
     toBench = append(baseURL,link(ind));
