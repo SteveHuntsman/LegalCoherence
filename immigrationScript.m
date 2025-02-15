@@ -252,7 +252,7 @@ for j = 9:numel(bigCourt)
         bar1 = [foo1,1-sum(foo1)];
         bar2 = [foo2,1-sum(foo2)];
         try
-            figure('Position',[0,0,700,175]);
+            figure('Position',[0,0,560,210]);
             subplot(1,5,1:3);
                 labels1 = [allCountriesBeforeCourt{j}(ind1);"Other"];
                 labels2 = [allCountriesBeforeCourt{j}(ind2);"Other"];
